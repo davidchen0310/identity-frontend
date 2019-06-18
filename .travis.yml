@@ -1,7 +1,8 @@
 language: go
 
 script:
-  - go run request_handler.go
+  - go run request_handler.go &
+  - sleep 30
 
 go:
 - 1.x
