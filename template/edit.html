@@ -14,18 +14,7 @@
 <div>Firstname: <textarea name="firstName" rows=1>{{printf "%s" .FirstName}}</textarea></div>
 <div>Lastname: <textarea name="lastName" rows=1>{{printf "%s" .LastName}}</textarea></div>
 <div>Email: <textarea name="email" rows=1>{{printf "%s" .Email}}</textarea></div>
-<div>Create Timestamp: <textarea name="createTs" rows=1>{{printf "%s" .CreateTs}}</textarea></div>
-<div>Update Timestamp: <textarea name="updateTs" rows=1>{{printf "%s" .UpdateTs}}</textarea></div>
 <div>Description <textarea name="description" rows=20 cols="100">{{printf "%s" .Description}}</textarea></div>
-<!-- <div class = "input-group">
-    <div class = "input-group-prepend">
-        <span class="input-group=text">Username:</span>
-    </div>
-    <input type = "text" class = "form-control" placeholder = {{printf "%s" .Username}}>
-    <div class = "input-group-prepend">
-            <span class="input-group=text"></span>
-    </div>
-</div> -->
+
 <div><input class = "btn btn-primary" type="submit" value="Save"></div>
-<p></p>
 </form>
