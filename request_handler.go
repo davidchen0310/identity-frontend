@@ -81,6 +81,7 @@ func (p *Profile) saveToBackend() error {
 	if err != nil {
 		log.Println(err)
 	}
+
 	return err
 }
 
