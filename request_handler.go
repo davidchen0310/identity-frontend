@@ -15,8 +15,9 @@ import (
 	"strings"
 )
 
-// Contains all the information about user's information
-type Profile struct {
+// The following structs are declared to enable the use of JSON Marshalling
+
+type profile struct {
 	Username    string `json:"username"`
 	Firstname   string `json:"firstName"`
 	Lastname    string `json:"lastName"`
@@ -26,26 +27,23 @@ type Profile struct {
 	Verified    string `json:"verified"`
 }
 
-// Struct to contain page information
-type UpdateInfo struct {
+type updateInfo struct {
 	Email       string `json:"email"`
 	Description string `json:"description"`
 }
 
-//Struct to store updated information
-type PublicInfo struct {
+type publicInfo struct {
 	Username    string `json:"username"`
 	Description string `json:"description"`
 }
 
-//Struct to store public page information
-type LogInfo struct {
+type logInfo struct {
 	Username string `json:"username"`
 	Password string `json:"password"`
 }
 
 // Preload the information by fetching data from backend
-func readFromBackend(userid string) (*Profile, error) {
+func readFromBackend(userid string) (*profile, error) {
 	apiUrl := "http://localhost:8080/v1/accounts/@me"
 	res, err := http.Get(apiUrl)
 	if err != nil {
@@ -53,7 +51,7 @@ func readFromBackend(userid string) (*Profile, error) {
 	}
 	defer res.Body.Close()
 	bodyBytes, err := ioutil.ReadAll(res.Body)
-	var pageInfo Profile
+	var pageInfo profile
 	err = json.Unmarshal(bodyBytes, &pageInfo)
 	if err != nil {
 		log.Println(err)
@@ -62,7 +60,7 @@ func readFromBackend(userid string) (*Profile, error) {
 }
 
 // Function to read public information without login and render the web pages
-func readFromPublic(username string) (*PublicInfo, error) {
+func readFromPublic(username string) (*publicInfo, error) {
 	link := "http://localhost:8080/v1/accounts/" + username
 	resp, err := http.Get(link)
 	if err != nil {
@@ -71,7 +69,7 @@ func readFromPublic(username string) (*PublicInfo, error) {
 	defer resp.Body.Close()
 
 	bodyBytes, err := ioutil.ReadAll(resp.Body)
-	var pageData PublicInfo
+	var pageData publicInfo
 	err = json.Unmarshal(bodyBytes, &pageData)
 	if err != nil {
 		log.Println(err)
@@ -86,7 +84,7 @@ func accountsHandler(w http.ResponseWriter, r *http.Request, title string) {
 		log.Println(err)
 	}
 
-	page := Profile{}
+	page := profile{}
 	page.Username = p.Username
 	page.Description = p.Description
 	renderTemplate(w, "public_profile", &page)
@@ -114,7 +112,7 @@ func saveHandler(w http.ResponseWriter, r *http.Request, title string) {
 	// Change the information from preloaded information
 	originalPage.Email = email
 	originalPage.Description = description
-	updateInfo := UpdateInfo{}
+	updateInfo := updateInfo{}
 	updateInfo.Email = email
 	updateInfo.Description = description
 	// Json format transformation
@@ -126,7 +124,7 @@ func saveHandler(w http.ResponseWriter, r *http.Request, title string) {
 	payload := strings.NewReader(Data)
 	// Send http request
 	link := "http://localhost:8080/v1/accounts/@me?token=" + cookie.Value
- 	client := &http.Client{}
+	client := &http.Client{}
 	request, err := http.NewRequest("PUT", link, payload)
 	request.Header.Add("Content-Type", "application/json")
 	_, err = client.Do(request)
@@ -142,7 +140,7 @@ func saveHandler(w http.ResponseWriter, r *http.Request, title string) {
 var templates = template.Must(template.ParseFiles("template/edit.html", "template/accounts.html", "template/register.html", "template/login.html", "template/public_profile.html", "template/profile.html", "template/loginError.html", "template/ChangePassword.html"))
 
 //
-func renderTemplate(w http.ResponseWriter, tmpl string, p *Profile) {
+func renderTemplate(w http.ResponseWriter, tmpl string, p *profile) {
 	err := templates.ExecuteTemplate(w, tmpl+".html", p)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -165,7 +163,7 @@ func makeHandler(fn func(http.ResponseWriter, *http.Request, string)) http.Handl
 }
 
 //
-func passwordHandler()  {
+func passwordHandler() {
 
 }
 
@@ -175,8 +173,8 @@ func savepasswordHandler() {
 }
 
 //
-func createHandler(w http.ResponseWriter, r *http.Request, title string){
-	var pageinfo Profile
+func createHandler(w http.ResponseWriter, r *http.Request, title string) {
+	var pageinfo profile
 	pageinfo.Username = r.FormValue("username")
 	pageinfo.Firstname = r.FormValue("firstname")
 	pageinfo.Lastname = r.FormValue("lastname")
@@ -198,7 +196,7 @@ func createHandler(w http.ResponseWriter, r *http.Request, title string){
 	}
 	// Send the request to create a new account
 
-	user := LogInfo{}
+	user := logInfo{}
 	user.Username = pageinfo.Username
 	user.Password = pageinfo.Password
 	userData, err := json.Marshal(user)
@@ -211,10 +209,10 @@ func createHandler(w http.ResponseWriter, r *http.Request, title string){
 	// Log in with newly created account information
 	// Get token from login response from backend
 	token := response.Header.Get("Set-Cookie")
-	Cookie := http.Cookie{Name:"name-cookie",
-		Value: token,
-		Path: "/",
-		HttpOnly:true}
+	Cookie := http.Cookie{Name: "name-cookie",
+		Value:    token,
+		Path:     "/",
+		HttpOnly: true}
 	http.SetCookie(w, &Cookie)
 	// Set the cookie to the browser
 	if err != nil {
@@ -226,10 +224,9 @@ func createHandler(w http.ResponseWriter, r *http.Request, title string){
 
 // Handle the login page
 func homeHandler(w http.ResponseWriter, r *http.Request, title string) {
-	p := Profile{}
+	p := profile{}
 	renderTemplate(w, "login", &p)
 }
-
 
 //
 func loginHandler(w http.ResponseWriter, r *http.Request, title string) {
@@ -237,7 +234,7 @@ func loginHandler(w http.ResponseWriter, r *http.Request, title string) {
 	username := r.FormValue("username")
 	password := r.FormValue("password")
 	// Encode the log in data to the json format payload
-	user := LogInfo{}
+	user := logInfo{}
 	user.Username = username
 	user.Password = password
 	userData, err := json.Marshal(user)
@@ -254,17 +251,17 @@ func loginHandler(w http.ResponseWriter, r *http.Request, title string) {
 	token := response.Header.Get("Set-Cookie")
 	fmt.Println(token)
 	// Set the cookies to the browser
-	Cookie := http.Cookie{Name:"name-cookie",
-		Value: token,
-		Path:"/",
-		HttpOnly:true}
+	Cookie := http.Cookie{Name: "name-cookie",
+		Value:    token,
+		Path:     "/",
+		HttpOnly: true}
 	http.SetCookie(w, &Cookie)
 	http.Redirect(w, r, "/privatePage/", http.StatusFound)
 }
 
 //
 func registerHandler(w http.ResponseWriter, r *http.Request, title string) {
-	p := Profile{}
+	p := profile{}
 	renderTemplate(w, "register", &p)
 }
 
@@ -272,8 +269,8 @@ func registerHandler(w http.ResponseWriter, r *http.Request, title string) {
 func privateHandler(w http.ResponseWriter, r *http.Request, title string) {
 	//fmt.Println("Cookie.......")
 	// Read cookie from browser
-	cookie,_ := r.Cookie("name-cookie")
-	link := "http://localhost:8080/v1/accounts/@me?token="+ cookie.Value
+	cookie, _ := r.Cookie("name-cookie")
+	link := "http://localhost:8080/v1/accounts/@me?token=" + cookie.Value
 	resp, err := http.Get(link)
 	if err != nil {
 		log.Println(err)
@@ -281,7 +278,7 @@ func privateHandler(w http.ResponseWriter, r *http.Request, title string) {
 	defer resp.Body.Close()
 	// Read personal profile data from backend and transform to our data format
 	bodyBytes, err := ioutil.ReadAll(resp.Body)
-	var pageInfo = Profile{}
+	var pageInfo = profile{}
 	err = json.Unmarshal(bodyBytes, &pageInfo)
 	fmt.Println(pageInfo)
 	if err != nil {
@@ -291,20 +288,19 @@ func privateHandler(w http.ResponseWriter, r *http.Request, title string) {
 }
 
 // Handle error when having wrong password and let user to re-enter password
-func errorPasswordHandler(w http.ResponseWriter, r *http.Request, title string){
-	p := Profile{}
+func errorPasswordHandler(w http.ResponseWriter, r *http.Request, title string) {
+	p := profile{}
 	renderTemplate(w, "loginError", &p)
 }
 
 // When user need to log out, this handler would erase the cookie to clean up the log in status.
-func logoutHandler(w http.ResponseWriter, r *http.Request, title string){
-	logOutCookie := http.Cookie{Name:"name-cookie",
-		Path:"/",
-		MaxAge:-1}
+func logoutHandler(w http.ResponseWriter, r *http.Request, title string) {
+	logOutCookie := http.Cookie{Name: "name-cookie",
+		Path:   "/",
+		MaxAge: -1}
 	http.SetCookie(w, &logOutCookie)
-	http.Redirect(w, r, "/home/",http.StatusFound)
+	http.Redirect(w, r, "/home/", http.StatusFound)
 }
-
 
 //
 func main() {
