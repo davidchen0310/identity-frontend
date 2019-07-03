@@ -61,20 +61,25 @@ func renderTemplate(w http.ResponseWriter, tmplName string, p *profile) {
 	}
 }
 
-// Preload the information by fetching data from backend
-func readFromBackend(userid string) (*profile, error) {
-	apiURL := backendURL + "/accounts/@me"
-	res, err := client.Get(apiURL)
+func readMyProfile() (*profile, error) {
+	url := backendURL + "/accounts/@me"
+	resp, err := client.Get(url)
 	if err != nil {
-		log.Println(err)
+		return nil, err
 	}
-	defer res.Body.Close()
-	bodyBytes, err := ioutil.ReadAll(res.Body)
+	defer resp.Body.Close()
+
+	bs, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return nil, err
+	}
+
 	var pageInfo profile
-	err = json.Unmarshal(bodyBytes, &pageInfo)
+	err = json.Unmarshal(bs, &pageInfo)
 	if err != nil {
-		log.Println(err)
+		return nil, err
 	}
+
 	return &pageInfo, err
 }
 
@@ -112,10 +117,10 @@ func accountsHandler(w http.ResponseWriter, r *http.Request) {
 
 // Render the edit information page
 func editHandler(w http.ResponseWriter, r *http.Request) {
-	userid := r.URL.Path[len("/edit/"):]
-	p, err := readFromBackend(userid)
+	p, err := readMyProfile()
 	if err != nil {
-		log.Println(err)
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
 	}
 	renderTemplate(w, "edit", p)
 }
@@ -124,11 +129,12 @@ func editHandler(w http.ResponseWriter, r *http.Request) {
 func saveHandler(w http.ResponseWriter, r *http.Request) {
 	email := r.FormValue("email")
 	description := r.FormValue("description")
-	userid := r.URL.Path[len("/save/"):]
-	originalPage, err := readFromBackend(userid)
+	originalPage, err := readMyProfile()
 	if err != nil {
-		log.Println(err)
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
 	}
+
 	// Get cookie from browser
 	cookie, err := r.Cookie("name-cookie")
 	// Change the information from preloaded information
