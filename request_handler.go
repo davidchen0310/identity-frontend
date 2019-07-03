@@ -11,7 +11,6 @@ import (
 	"io/ioutil"
 	"log"
 	"net/http"
-	"regexp"
 	"strings"
 	"time"
 )
@@ -98,8 +97,9 @@ func readFromPublic(username string) (*publicInfo, error) {
 }
 
 //
-func accountsHandler(w http.ResponseWriter, r *http.Request, title string) {
-	p, err := readFromPublic(title)
+func accountsHandler(w http.ResponseWriter, r *http.Request) {
+	userid := r.URL.Path[len("/accounts/"):]
+	p, err := readFromPublic(userid)
 	if err != nil {
 		log.Println(err)
 	}
@@ -111,8 +111,9 @@ func accountsHandler(w http.ResponseWriter, r *http.Request, title string) {
 }
 
 // Render the edit information page
-func editHandler(w http.ResponseWriter, r *http.Request, title string) {
-	p, err := readFromBackend(title)
+func editHandler(w http.ResponseWriter, r *http.Request) {
+	userid := r.URL.Path[len("/edit/"):]
+	p, err := readFromBackend(userid)
 	if err != nil {
 		log.Println(err)
 	}
@@ -120,10 +121,11 @@ func editHandler(w http.ResponseWriter, r *http.Request, title string) {
 }
 
 // The Function to save the edited information
-func saveHandler(w http.ResponseWriter, r *http.Request, title string) {
+func saveHandler(w http.ResponseWriter, r *http.Request) {
 	email := r.FormValue("email")
 	description := r.FormValue("description")
-	originalPage, err := readFromBackend(title)
+	userid := r.URL.Path[len("/save/"):]
+	originalPage, err := readFromBackend(userid)
 	if err != nil {
 		log.Println(err)
 	}
@@ -154,21 +156,6 @@ func saveHandler(w http.ResponseWriter, r *http.Request, title string) {
 	http.Redirect(w, r, "/privatePage/", http.StatusFound)
 }
 
-// Regular expression to avoid illegal request
-var validPath = regexp.MustCompile("^(/(edit|accounts|home)/([a-zA-Z0-9]+))|(/(login|home|create|privatePage|register|logout|save|loginError)/)$")
-
-//
-func makeHandler(fn func(http.ResponseWriter, *http.Request, string)) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		m := validPath.FindStringSubmatch(r.URL.Path)
-		if m == nil {
-			http.NotFound(w, r)
-			return
-		}
-		fn(w, r, m[3])
-	}
-}
-
 //
 func passwordHandler() {
 
@@ -180,7 +167,7 @@ func savepasswordHandler() {
 }
 
 //
-func createHandler(w http.ResponseWriter, r *http.Request, title string) {
+func createHandler(w http.ResponseWriter, r *http.Request) {
 	var pageinfo profile
 	pageinfo.Username = r.FormValue("username")
 	pageinfo.Firstname = r.FormValue("firstname")
@@ -230,13 +217,13 @@ func createHandler(w http.ResponseWriter, r *http.Request, title string) {
 }
 
 // Handle the login page
-func homeHandler(w http.ResponseWriter, r *http.Request, title string) {
+func homeHandler(w http.ResponseWriter, r *http.Request) {
 	p := profile{}
 	renderTemplate(w, "login", &p)
 }
 
 //
-func loginHandler(w http.ResponseWriter, r *http.Request, title string) {
+func loginHandler(w http.ResponseWriter, r *http.Request) {
 	// Get user login in information
 	username := r.FormValue("username")
 	password := r.FormValue("password")
@@ -267,13 +254,13 @@ func loginHandler(w http.ResponseWriter, r *http.Request, title string) {
 }
 
 //
-func registerHandler(w http.ResponseWriter, r *http.Request, title string) {
+func registerHandler(w http.ResponseWriter, r *http.Request) {
 	p := profile{}
 	renderTemplate(w, "register", &p)
 }
 
 //
-func privateHandler(w http.ResponseWriter, r *http.Request, title string) {
+func privateHandler(w http.ResponseWriter, r *http.Request) {
 	//fmt.Println("Cookie.......")
 	// Read cookie from browser
 	cookie, _ := r.Cookie("name-cookie")
@@ -295,13 +282,13 @@ func privateHandler(w http.ResponseWriter, r *http.Request, title string) {
 }
 
 // Handle error when having wrong password and let user to re-enter password
-func errorPasswordHandler(w http.ResponseWriter, r *http.Request, title string) {
+func errorPasswordHandler(w http.ResponseWriter, r *http.Request) {
 	p := profile{}
 	renderTemplate(w, "loginError", &p)
 }
 
 // When user need to log out, this handler would erase the cookie to clean up the log in status.
-func logoutHandler(w http.ResponseWriter, r *http.Request, title string) {
+func logoutHandler(w http.ResponseWriter, r *http.Request) {
 	logOutCookie := http.Cookie{Name: "name-cookie",
 		Path:   "/",
 		MaxAge: -1}
@@ -311,15 +298,15 @@ func logoutHandler(w http.ResponseWriter, r *http.Request, title string) {
 
 //
 func main() {
-	http.HandleFunc("/accounts/", makeHandler(accountsHandler))
-	http.HandleFunc("/edit/", makeHandler(editHandler))
-	http.HandleFunc("/save/", makeHandler(saveHandler))
-	http.HandleFunc("/register/", makeHandler(registerHandler))
-	http.HandleFunc("/create/", makeHandler(createHandler))
-	http.HandleFunc("/login/", makeHandler(loginHandler))
-	http.HandleFunc("/home/", makeHandler(homeHandler))
-	http.HandleFunc("/privatePage/", makeHandler(privateHandler))
-	http.HandleFunc("/logout/", makeHandler(logoutHandler))
-	http.HandleFunc("/loginError/", makeHandler(errorPasswordHandler))
+	http.HandleFunc("/accounts/", accountsHandler)
+	http.HandleFunc("/edit/", editHandler)
+	http.HandleFunc("/save/", saveHandler)
+	http.HandleFunc("/register/", registerHandler)
+	http.HandleFunc("/create/", createHandler)
+	http.HandleFunc("/login/", loginHandler)
+	http.HandleFunc("/home/", homeHandler)
+	http.HandleFunc("/privatePage/", privateHandler)
+	http.HandleFunc("/logout/", logoutHandler)
+	http.HandleFunc("/loginError/", errorPasswordHandler)
 	log.Println(http.ListenAndServe(":5000", nil))
 }
