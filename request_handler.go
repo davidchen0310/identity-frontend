@@ -47,8 +47,18 @@ const (
 	timeoutInSeconds = 10
 )
 
-var client = &http.Client{
-	Timeout: time.Second * timeoutInSeconds,
+var (
+	client = &http.Client{
+		Timeout: time.Second * timeoutInSeconds,
+	}
+	templates = template.Must(template.ParseGlob("./template/*.html"))
+)
+
+func renderTemplate(w http.ResponseWriter, tmplName string, p *profile) {
+	err := templates.ExecuteTemplate(w, tmplName+".html", p)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+	}
 }
 
 // Preload the information by fetching data from backend
@@ -141,17 +151,6 @@ func saveHandler(w http.ResponseWriter, r *http.Request, title string) {
 	}
 	// After edited it redirect to the private information page
 	http.Redirect(w, r, "/privatePage/", http.StatusFound)
-}
-
-// Load html template
-var templates = template.Must(template.ParseFiles("template/edit.html", "template/accounts.html", "template/register.html", "template/login.html", "template/public_profile.html", "template/profile.html", "template/loginError.html", "template/ChangePassword.html"))
-
-//
-func renderTemplate(w http.ResponseWriter, tmpl string, p *profile) {
-	err := templates.ExecuteTemplate(w, tmpl+".html", p)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-	}
 }
 
 // Regular expression to avoid illegal request
