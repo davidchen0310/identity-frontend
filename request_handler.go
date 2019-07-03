@@ -53,7 +53,6 @@ func readFromBackend(userid string) (*Profile, error) {
 	}
 	defer res.Body.Close()
 	bodyBytes, err := ioutil.ReadAll(res.Body)
-	// Extract data from response and turn to pageInfo type
 	var pageInfo Profile
 	err = json.Unmarshal(bodyBytes, &pageInfo)
 	if err != nil {
@@ -230,6 +229,7 @@ func homeHandler(w http.ResponseWriter, r *http.Request, title string) {
 	p := Profile{}
 	renderTemplate(w, "login", &p)
 }
+
 
 //
 func loginHandler(w http.ResponseWriter, r *http.Request, title string) {
